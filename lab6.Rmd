@@ -49,7 +49,16 @@ object named `tor_1998`. Hint: make use of selector gadget and
 </div>
 
 ```{r tornadoes_1998}
+url <- "http://www.tornadohistoryproject.com/tornado/Oklahoma/1998/table"
 
+html_doc <- read_html(url) 
+html_doc %>% 
+  html_nodes("#results") %>% 
+  html_table(header = T) %>% 
+  .[[1]] %>% 
+  clean_names() %>% 
+  filter(spc_number != "SPC #") %>% 
+  select(date:lift_lon)
 ```
 
 #### Step 2
@@ -57,7 +66,7 @@ object named `tor_1998`. Hint: make use of selector gadget and
 <div class="bkgemph">
 Clean up `tor_1998` by removing the rows with header information, fix the
 variable names with `janitor::clean_names()`, and only keep columns
-`spc_number:lift_lon`.
+`date:lift_lon`.
 </div>
 
 ```{r clean_tornadoes}
@@ -86,7 +95,28 @@ result in a single data frame. Name the resulting data frame `ok_tornadoes`.
 </div>
 
 ```{r get_all_tornadoes}
-
+# The following is the sample answer
+get_tornadoes <- function(year) {
+  base_url <- "http://www.tornadohistoryproject.com/tornado/Oklahoma/"
+  url <- str_c(base_url, year, "/table")
+  
+  tor_html <- read_html(url)
+  
+  tor <- tor_html %>% 
+    html_nodes("#results") %>% 
+    html_table() %>% 
+    .[[1]]  
+  
+  names(tor) <- tor[1, ]
+  
+  tor %>% 
+    filter(Date != "Date") %>% 
+    janitor::clean_names() %>% 
+    select(date:lift_lon) %>% 
+    as_tibble()
+}
+ok_tornadoes <- map_df(1998:2017, get_tornadoes)
+saveRDS(ok_tornadoes, file = "data/ok_tor.rds")
 ```
 
 ## Visualize data
